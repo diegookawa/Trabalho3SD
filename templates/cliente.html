@@ -5,7 +5,6 @@
     <title>Alarme</title>
     <script src="cliente.js"></script>
 </head>
-
 <script>
 
     // var intervalId = window.setInterval(function(){
@@ -21,6 +20,16 @@
     // }, 5000);
 
     // var source = new EventSource("{{ url_for('cadastrar',name = nomeCliente) }}");
+    // source.addEventListener('publish', function(event) {
+    //     var data = JSON.parse(event.data);
+    //     console.log("The server says " + data.message);
+    // }, false);
+    // source.addEventListener('error', function(event) {
+    //     console.log("Error"+ event)
+    //     alert("Failed to connect to event stream. Is Redis running?");
+    // }, false);
+
+    // var source = new EventSource("{{ url_for('sse.stream') }}");
     // source.addEventListener('publish', function(event) {
     //     var data = JSON.parse(event.data);
     //     console.log("The server says " + data.message);
@@ -181,6 +190,8 @@
             <h2>Mostrar compromissos</h2>
             <form action="http://localhost:5000/consultarCompromissos" id="formConsultarCompromissos" method = "post">
                 <input type="text" id="nomeCliente" name="nomeCliente" class="nomeClienteInput" style="display: none;">
+                <label for="fname">Informe uma data:</label><br>
+                <input type="text" id="dataCompromissos" name="dataCompromissos"><br><br>
                 <input type="submit" value="Enviar">
             </form> 
         

@@ -6,27 +6,47 @@
 # import datetime
 # import threading
 # import time
-from Crypto.Hash import SHA256
-from Crypto.Signature import pkcs1_15
-from Crypto.PublicKey import RSA
+# from Crypto.Hash import SHA256
+# from Crypto.Signature import pkcs1_15
+# from Crypto.PublicKey import RSA
 
-from flask import Flask, redirect, url_for, request, render_template
+from flask import Flask, redirect, url_for, request, render_template, Response, stream_with_context
 from flask_sse import sse
 from apscheduler.schedulers.background import BackgroundScheduler
+from gevent.pywsgi import WSGIServer
+import json
+import time
 
-key = RSA.generate(2048)
+# key = RSA.generate(2048)
 clientes = {}
 compromissos = []
-public_key = key.publickey().exportKey("PEM")
-private_key = key.exportKey("PEM")
+# public_key = key.publickey().exportKey("PEM")
+# private_key = key.exportKey("PEM")
 
 app = Flask(__name__)
 app.config["REDIS_URL"] = "redis://localhost"
-# app.register_blueprint(sse, url_prefix='/cadastrar')
+app.register_blueprint(sse, url_prefix='/stream')
+
+# sse.publish({"message": "Teste"}, type='publish')
+
+# def server_side_event():
+#     """ Function to publish server side event """
+#     with app.app_context():
+#         sse.publish({"message": "Teste"}, type='publish')
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# @app.route("/listen")
+# def listen():
+
+#     def respond_to_client():
+        
+#         _data = json.dumps({"color":"red"})
+#         yield f"id: 1\ndata: {_data}\nevent: online\n\n"
+
+#     return Response(respond_to_client(), mimetype='text/event-stream')
 
 @app.route('/cadastrar/<name>')
 def cadastrar(name):
@@ -72,9 +92,10 @@ def cadastroCompromisso():
 @app.route('/consultarCompromissos',methods = ['POST', 'GET'])
 def consultarCompromissos():
     nomeCliente = request.form['nomeCliente']
+    data = request.form['dataCompromissos']
     stringCompromissos = ""
     for compromisso in compromissos:
-        if(compromisso[0] == nomeCliente):
+        if(compromisso[0] == nomeCliente and data == compromisso[1]["dataCompromisso"]):
             stringCompromissos = stringCompromissos + str(compromisso) + "\n"
 
     return stringCompromissos
@@ -198,4 +219,6 @@ def cancelarCompromisso():
 #     daemon.requestLoop()   
     
 if __name__ == "__main__":
+    # http_server = WSGIServer(("localhost", 5000), app)
+    # http_server.serve_forever()
     app.run(debug=True)

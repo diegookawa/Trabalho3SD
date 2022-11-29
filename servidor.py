@@ -11,6 +11,8 @@ from Crypto.Signature import pkcs1_15
 from Crypto.PublicKey import RSA
 
 from flask import Flask, redirect, url_for, request, render_template
+from flask_sse import sse
+from apscheduler.schedulers.background import BackgroundScheduler
 
 key = RSA.generate(2048)
 clientes = {}
@@ -19,6 +21,8 @@ public_key = key.publickey().exportKey("PEM")
 private_key = key.exportKey("PEM")
 
 app = Flask(__name__)
+app.config["REDIS_URL"] = "redis://localhost"
+# app.register_blueprint(sse, url_prefix='/cadastrar')
 
 @app.route('/')
 def index():
@@ -27,6 +31,7 @@ def index():
 @app.route('/cadastrar/<name>')
 def cadastrar(name):
     clientes[name] = name
+    # sse.publish({"message": "TESTANDO"}, type='publish')
     return render_template('/cliente.html')
 
 @app.route('/login',methods = ['POST'])
@@ -52,8 +57,16 @@ def cadastroCompromisso():
 
     compromissos.append((nomeCliente, compromisso))
 
+    if(nomeConvidados is not None):
+        convidados = nomeConvidados.split(",")
+
+    for convidado in convidados:
+        novoCompromisso = compromisso.copy()
+        compromissos.append((str(convidado), novoCompromisso))
+
     print(compromissos)
 
+    # sse.publish({"message": "TESTANDO"}, type='publish')
     return redirect(url_for('cadastrar',name = nomeCliente))
 
 @app.route('/consultarCompromissos',methods = ['POST', 'GET'])

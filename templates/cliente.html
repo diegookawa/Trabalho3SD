@@ -8,8 +8,30 @@
 
 <script>
 
+    // var intervalId = window.setInterval(function(){
+    //     var source = new EventSource("{{ url_for('cadastrar',name = nomeCliente) }}");
+    //     source.addEventListener('publish', function(event) {
+    //         var data = JSON.parse(event.data);
+    //         console.log("The server says " + data.message);
+    //     }, false);
+    //     source.addEventListener('error', function(event) {
+    //         console.log("Error"+ event)
+    //         alert("Failed to connect to event stream. Is Redis running?");
+    //     }, false);
+    // }, 5000);
+
+    // var source = new EventSource("{{ url_for('cadastrar',name = nomeCliente) }}");
+    // source.addEventListener('publish', function(event) {
+    //     var data = JSON.parse(event.data);
+    //     console.log("The server says " + data.message);
+    // }, false);
+    // source.addEventListener('error', function(event) {
+    //     console.log("Error"+ event)
+    //     alert("Failed to connect to event stream. Is Redis running?");
+    // }, false);
+
     window.onload = function () {
-         
+            
         nome = (window.location.href.split("/").pop()).toString()
         elements = document.getElementsByClassName("nomeClienteInput")
         

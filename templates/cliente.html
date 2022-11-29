@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Alarme</title>
+    <script src="cliente.js"></script>
+</head>
+
+<script>
+
+    window.onload = function () {
+         
+        nome = (window.location.href.split("/").pop()).toString()
+        elements = document.getElementsByClassName("nomeClienteInput")
+        
+        for (i = 0; i < elements.length; i++){
+
+            document.getElementsByClassName("nomeClienteInput")[i].value = nome
+
+        }
+
+    }
+
+    function cadastrarCompromisso() {
+
+        document.getElementById("divCadastroCompromisso").style.display = "block";
+
+    }
+
+    function cancelarCompromisso() {
+
+        document.getElementById("divCancelarCompromisso").style.display = "block";
+
+    }
+
+    function mostrarCompromissos() {
+
+        document.getElementById("divMostrarCompromissos").style.display = "block";
+
+    }
+
+    function mostrarNav() {
+
+        document.getElementById("opcoes").style.visibility = "visible";
+        document.getElementById("divNomeCliente").style.visibility = "hidden";
+
+    }
+
+</script>
+
+<style>
+    ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #333;
+        
+    }
+
+    li {
+        float: left;
+    }
+
+    li button {
+        display: block;
+        color: white;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+    }
+
+    li button:hover:not(.active) {
+        background-color: #111;
+    }
+
+    button {
+
+        background-color: #111;
+        text-align: center;
+
+    }
+
+    body {
+
+        display: inline-block;
+
+    }
+
+    input[type=submit] {
+      width: 100%;
+      background-color: #4CAF50;
+      color: white;
+      padding: 14px 20px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    input[type=text], select {
+      width: 100%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      display: inline-block;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    </style>
+
+<body>
+
+    <div id="mainContent">
+
+        <nav id="opcoes">
+            <ul>
+                <li><button id="cadastrarCompromisso" name="cadastrarCompromisso" class="botaoNav" onclick="cadastrarCompromisso()">Cadastrar Compromisso</button></li>
+                <li><button id="cancelarCompromisso" name="cancelarCompromisso" class="botaoNav" onclick="cancelarCompromisso()">Cancelar Compromisso</button></li>
+                <li><button id="consultarCompromissos" name="consultarCompromissos" class="botaoNav" onclick="mostrarCompromissos()">Consultar Compromissos</button></li>
+            </ul>
+        </nav>
+    
+        <div id="divCadastroCompromisso" style="display: none;">
+        
+            <h2 id="tituloCadastrarCompromisso">Cadastrar compromisso</h2 >
+            <form action="http://localhost:5000/cadastroCompromisso" id="formCadastrarCompromisso" method = "post">
+                <input type="text" id="nomeCliente" name="nomeCliente" class="nomeClienteInput" value="" style="display: none;">
+                <label for="fname">Nome do compromisso:</label><br>
+                <input type="text" id="nomeCompromisso" name="nomeCompromisso"><br>
+                <label for="lname">Data do compromisso:</label><br>
+                <input type="text" id="dataCompromisso" name="dataCompromisso" value=""><br><br>
+                <label for="lname">Horário do compromisso:</label><br>
+                <input type="text" id="horarioCompromisso" name="horarioCompromisso" value=""><br><br>
+                <label for="lname">Informe o nome dos convidados separados por ',' (opcional):</label><br>
+                <input type="text" id="nomeConvidados" name="nomeConvidados" value=""><br><br>
+                <label for="lname">Informe o horário do alerta, se desejar receber (opcional):</label><br>
+                <input type="text" id="horarioAlerta" name="horarioAlerta" value=""><br><br>
+                <input type="submit" value="Enviar">
+            </form> 
+        
+        </div>
+    
+        <div id="divCancelarCompromisso" style="display: none;">
+            
+            <h2 id="tituloCancelarCompromisso">Cancelar compromisso</h2 >
+            <form action="http://localhost:5000/cancelarCompromisso" id="formCancelarCompromisso" method = "post">
+                <input type="text" id="nomeCliente" name="nomeCliente" class="nomeClienteInput" value="" style="display: none;">
+                <label for="fname">Informe o nome do compromisso a ser cancelado:</label><br>
+                <input type="text" id="nomeCompromissoCancelado" name="nomeCompromissoCancelado"><br><br>
+                <input type="submit" value="Enviar">
+            </form> 
+            
+        </div>
+    
+        <div id="divMostrarCompromissos" style="display: none;">
+            
+            <h2>Mostrar compromissos</h2>
+            <form action="http://localhost:5000/consultarCompromissos" id="formConsultarCompromissos" method = "post">
+                <input type="text" id="nomeCliente" name="nomeCliente" class="nomeClienteInput" style="display: none;">
+                <input type="submit" value="Enviar">
+            </form> 
+        
+        </div>    
+
+    </div>
+    
+</body>
+</html>

@@ -3,69 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <title>Alarme</title>
-    <script src="cliente.js"></script>
 </head>
 <script>
 
-    // var intervalId = window.setInterval(function(){
-    //     var source = new EventSource("{{ url_for('cadastrar',name = nomeCliente) }}");
-    //     source.addEventListener('publish', function(event) {
-    //         var data = JSON.parse(event.data);
-    //         console.log("The server says " + data.message);
-    //     }, false);
-    //     source.addEventListener('error', function(event) {
-    //         console.log("Error"+ event)
-    //         alert("Failed to connect to event stream. Is Redis running?");
-    //     }, false);
-    // }, 5000);
-
-    // var source = new EventSource("{{ url_for('cadastrar',name = nomeCliente) }}");
-    // source.addEventListener('publish', function(event) {
-    //     var data = JSON.parse(event.data);
-    //     console.log("The server says " + data.message);
-    // }, false);
-    // source.addEventListener('error', function(event) {
-    //     console.log("Error"+ event)
-    //     alert("Failed to connect to event stream. Is Redis running?");
-    // }, false);
-
-    // var source = new EventSource("{{ url_for('sse.stream') }}");
-    // source.addEventListener('publish', function(event) {
-    //     var data = JSON.parse(event.data);
-    //     console.log("The server says " + data.message);
-    // }, false);
-    // source.addEventListener('error', function(event) {
-    //     console.log("Error"+ event)
-    //     alert("Failed to connect to event stream. Is Redis running?");
-    // }, false);
+    var nome;
+    var data;
+    var datas;
 
     window.onload = function () {
             
-        nome = (window.location.href.split("/").pop()).toString()
-        elements = document.getElementsByClassName("nomeClienteInput")
+        nome = (window.location.href.split("/").pop()).toString();
+        elements = document.getElementsByClassName("nomeClienteInput");
         
         for (i = 0; i < elements.length; i++){
 
-            document.getElementsByClassName("nomeClienteInput")[i].value = nome
+            document.getElementsByClassName("nomeClienteInput")[i].value = nome;
 
         }
+        stream = "/stream?channel=" + nome;
+        var source = new EventSource(stream);
+        source.addEventListener('convite', function(event) {
+            data = JSON.parse(event.data);
+            datas = data['payload'];
+            datas = datas.split(',');
+            document.getElementById("nomeHost").value = data['user'];
+            document.getElementById("nomeConvite").value = datas[0];
+            document.getElementById("dataConvite").value = datas[1];
+            document.getElementById("horarioConvite").value = datas[2];
+            hideAll();
+            document.getElementById("divConvite").style.display = "block";
+            console.log("Convite");
+        }, false);
+
+        source.addEventListener('alerta', function(event) {
+            data = JSON.parse(event.data);
+            datas = data['payload'];
+            datas = datas.split(',');
+            console.log(datas[2]);
+            document.getElementById("nomeAlerta").value = datas[0];
+            document.getElementById("dataAlerta").value = datas[1];
+            document.getElementById("horarioAAlerta").value = datas[2];
+            hideAll();
+            document.getElementById("divAlerta").style.display = "block";
+            console.log("Alerta");
+        }, false);
 
     }
 
     function cadastrarCompromisso() {
-
+        hideAll();
         document.getElementById("divCadastroCompromisso").style.display = "block";
 
     }
 
     function cancelarCompromisso() {
-
+        hideAll();
         document.getElementById("divCancelarCompromisso").style.display = "block";
 
     }
 
     function mostrarCompromissos() {
-
+        hideAll();
         document.getElementById("divMostrarCompromissos").style.display = "block";
 
     }
@@ -75,6 +73,22 @@
         document.getElementById("opcoes").style.visibility = "visible";
         document.getElementById("divNomeCliente").style.visibility = "hidden";
 
+    }
+    function aceitarConvite(){
+        hideAll();
+        document.getElementById("divAceitar").style.display = "block";
+        document.getElementById("nomeACliente").value = nome;
+        document.getElementById("nomeAConvite").value = datas[0];
+        document.getElementById("dataAConvite").value = datas[1];
+        document.getElementById("horarioAConvite").value = datas[2];
+    }
+    function hideAll(){
+        document.getElementById("divCadastroCompromisso").style.display = "none";
+        document.getElementById("divCancelarCompromisso").style.display = "none";
+        document.getElementById("divMostrarCompromissos").style.display = "none";
+        document.getElementById("divConvite").style.display = "none";
+        document.getElementById("divAceitar").style.display = "none";
+        document.getElementById("divAlerta").style.display = "none";
     }
 
 </script>
@@ -93,15 +107,18 @@
         float: left;
     }
 
-    li button {
-        display: block;
+    button {
+        width: 100%;
+        background-color: #4CAF50;
         color: white;
-        text-align: center;
-        padding: 14px 16px;
-        text-decoration: none;
+        padding: 14px 20px;
+        margin: 8px 0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
     }
 
-    li button:hover:not(.active) {
+    button:hover:not(.active) {
         background-color: #111;
     }
 
@@ -130,13 +147,23 @@
     }
 
     input[type=text], select {
-      width: 100%;
-      padding: 12px 20px;
-      margin: 8px 0;
-      display: inline-block;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
+        width: 100%;
+        padding: 12px 20px;
+        margin: 8px 0;
+        display: inline-block;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    .dadosConvite{
+        width: 60% !important;
+        padding: 12px 20px !important;
+        margin: 0 !important;
+        display: inline-block !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background-color: #FFFFFF !important;
     }
 
     </style>
@@ -172,6 +199,35 @@
             </form> 
         
         </div>
+
+        <div id="divConvite" style="display: none;">
+        
+            <h2 id="tituloCadastrarCompromisso">Novo Convite!</h2>
+            <label for="fname">Nome do Anfitrião:</label>
+            <input type="text" id="nomeHost" name="nomeHost" class="dadosConvite" value="" disabled><br>
+            <label for="fname">Nome do compromisso:</label>
+            <input type="text" id="nomeConvite" name="nomeCovite" class="dadosConvite" value=""disabled><br>
+            <label for="lname">Data do compromisso:</label>
+            <input type="text" id="dataConvite" name="dataConvite" class="dadosConvite" value=""disabled><br>
+            <label for="lname">Horário do compromisso:</label>
+            <input type="text" id="horarioConvite" name="horarioConvite" class="dadosConvite" value=""disabled><br>
+            <button onclick="aceitarConvite()" id="bAceitar"> Aceitar</button>
+            <button onclick="hideAll()" id="bRejeitar"> Rejeitar</button>
+        
+        </div>
+
+        <div id="divAceitar" style="display: none;">
+            <h2 id="tituloAceitarConvite">Aceitar convite</h2 >
+            <form action="http://localhost:5000/aceitarConvite" id="formAceitarConvite" method = "post">
+                <input type="text" id="nomeACliente" name="nomeCliente" class="nomeClienteInput" value="" style="display: none;">
+                <input type="text" id="nomeAConvite" name="nomeCompromisso" value="" style="display: none;">
+                <input type="text" id="dataAConvite" name="dataCompromisso" value="" style="display: none;">
+                <input type="text" id="horarioAConvite" name="horarioCompromisso" value="" style="display: none;">
+                <label for="lname">Informe o horário do alerta, se desejar receber (opcional):</label><br>
+                <input type="text" id="horarioAlertaConvite" name="horarioAlerta" value=""><br><br>
+                <input type="submit" value="Enviar">
+            </form> 
+        </div>
     
         <div id="divCancelarCompromisso" style="display: none;">
             
@@ -194,6 +250,19 @@
                 <input type="text" id="dataCompromissos" name="dataCompromissos"><br><br>
                 <input type="submit" value="Enviar">
             </form> 
+        
+        </div>
+
+         <div id="divAlerta" style="display: none;">
+        
+            <h2 id="tituloAlerta">Alerta de Compromisso!</h2>
+            <label for="fname">Nome do compromisso:</label>
+            <input type="text" id="nomeAlerta" name="nomeAlerta" class="dadosConvite" value=""disabled><br>
+            <label for="lname">Data do compromisso:</label>
+            <input type="text" id="dataAlerta" name="dataAlerta" class="dadosConvite" value=""disabled><br>
+            <label for="lname">Horário do compromisso:</label>
+            <input type="text" id="horarioAAlerta" name="horarioAAlerta" class="dadosConvite" value=""disabled><br>
+            <button onclick="hideAll()" id="bFechar">Fechar</button>
         
         </div>    
 

@@ -1,0 +1,42 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"presentation": {
+		"reveal": "always",
+		"echo": true,
+		"focus": false,
+		"panel": "dedicated",
+		"showReuseMessage": true,
+		"group": "test",
+		"clear": true
+	},
+	"tasks": [
+		{
+			"label": "All processes",
+			"dependsOn": [
+				"Redis",
+				"Server",
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Redis",
+			"type": "shell",
+			"command": "redis-server --Port 6379",
+			"group": "test",
+			"isBackground": true
+		},
+		{
+			"label": "Server",
+			"type": "shell",
+			"command": "python3 servidor.py",
+			"group": "test",
+			"isBackground": true
+		}
+	]
+}

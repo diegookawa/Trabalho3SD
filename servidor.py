@@ -2,56 +2,33 @@
 # Desenvolvido por: Diego Henrique Arenas Okawa - 2127890 &&                                                                                                            #
 #                   Mario José Miyamoto Kowalski - 2128047                                                                                                              #
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-# import Pyro5.api
-# import datetime
-# import threading
-# import time
-# from Crypto.Hash import SHA256
-# from Crypto.Signature import pkcs1_15
-# from Crypto.PublicKey import RSA
 
 from flask import Flask, redirect, url_for, request, render_template, Response, stream_with_context
 from flask_sse import sse
-from apscheduler.schedulers.background import BackgroundScheduler
 from gevent.pywsgi import WSGIServer
 import json
 import time
+import datetime
+import threading
 
-# key = RSA.generate(2048)
 clientes = {}
 compromissos = []
-# public_key = key.publickey().exportKey("PEM")
-# private_key = key.exportKey("PEM")
 
 app = Flask(__name__)
 app.config["REDIS_URL"] = "redis://localhost"
 app.register_blueprint(sse, url_prefix='/stream')
 
-# sse.publish({"message": "Teste"}, type='publish')
-
-# def server_side_event():
-#     """ Function to publish server side event """
-#     with app.app_context():
-#         sse.publish({"message": "Teste"}, type='publish')
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# @app.route("/listen")
-# def listen():
-
-#     def respond_to_client():
-        
-#         _data = json.dumps({"color":"red"})
-#         yield f"id: 1\ndata: {_data}\nevent: online\n\n"
-
-#     return Response(respond_to_client(), mimetype='text/event-stream')
+def compromissoToString(compromisso):
+    string = str(compromisso["nomeCompromisso"] + "," + compromisso["dataCompromisso"] + "," + compromisso["horarioCompromisso"])
+    return string
 
 @app.route('/cadastrar/<name>')
 def cadastrar(name):
     clientes[name] = name
-    # sse.publish({"message": "TESTANDO"}, type='publish')
     return render_template('/cliente.html')
 
 @app.route('/login',methods = ['POST'])
@@ -74,20 +51,33 @@ def cadastroCompromisso():
     compromisso["horarioCompromisso"] = horarioCompromisso
     compromisso["nomeConvidados"] = nomeConvidados
     compromisso["horarioAlerta"] = horarioAlerta
+    compromisso['alertado'] = False
 
     compromissos.append((nomeCliente, compromisso))
 
-    if(nomeConvidados is not None):
+    if(nomeConvidados is not None and not nomeConvidados.isspace()):
         convidados = nomeConvidados.split(",")
+        string = compromissoToString(compromisso)
 
     for convidado in convidados:
-        novoCompromisso = compromisso.copy()
-        compromissos.append((str(convidado), novoCompromisso))
+        sse.publish({"user": nomeCliente, "payload": string}, type="convite", channel=convidado)
 
     print(compromissos)
 
-    # sse.publish({"message": "TESTANDO"}, type='publish')
     return redirect(url_for('cadastrar',name = nomeCliente))
+
+@app.route('/aceitarConvite',methods = ['POST'])
+def aceitarConvite():
+    compromisso = {}
+    compromisso["nomeCompromisso"] = request.form['nomeCompromisso']
+    compromisso["dataCompromisso"] = request.form['dataCompromisso']
+    compromisso["horarioCompromisso"] = request.form['horarioCompromisso']
+    compromisso["horarioAlerta"] = request.form['horarioAlerta']
+    compromisso["alertado"] = False
+
+    compromissos.append((request.form['nomeCliente'], compromisso))
+    return redirect(url_for('cadastrar',name = request.form['nomeCliente']))
+    
 
 @app.route('/consultarCompromissos',methods = ['POST', 'GET'])
 def consultarCompromissos():
@@ -106,119 +96,34 @@ def cancelarCompromisso():
     nomeCompromisso = request.form['nomeCompromissoCancelado']
 
     for i in reversed(range(len(compromissos))):
-        if nomeCompromisso == compromissos[i][1]["nomeCompromisso"]:
+        if nomeCompromisso == compromissos[i][1]["nomeCompromisso"] and nomeCliente == compromissos[i][0]:
             compromissos.pop(i)
 
     return redirect(url_for('cadastrar',name = nomeCliente))
 
-# @Pyro5.api.expose
-# class Servidor(object):
-#     key = RSA.generate(2048)
-#     clientes = {}
-#     compromissos = []
-#     public_key = key.publickey().exportKey("PEM")
-#     private_key = key.exportKey("PEM")
+def convertData(d):
+    strings = d.split('/')
+    data = strings[2]+ "-" + strings[1] + "-" + strings[0]
+    return data
 
-#     @Pyro5.server.oneway
-#     def cadastro(self, referenciaCliente, nome):
-#         cliente = Pyro5.api.Proxy(referenciaCliente)
-#         Servidor.clientes[nome] = (referenciaCliente)
-#         cliente.setPublic_key(Servidor.public_key)
+def verificarAlertas():
+    with app.app_context():
+        while True:
+            for compromisso in compromissos:
+                if convertData(compromisso[1]["dataCompromisso"]) == str(datetime.date.today()):
+                    t = time.localtime()
+                    horarioAtual = time.strftime("%H:%M", t)
+                    if compromisso[1]["horarioAlerta"] == str(horarioAtual) and compromisso[1]["alertado"] == False:
+                        nomeCompromisso = compromisso[1]["nomeCompromisso"]
+                        canal = compromisso[0]
+                        sse.publish({"payload": compromissoToString(compromisso[1])}, type="alerta", channel=canal)
+                        compromisso[1]["alertado"] = True
+                        print("Alerta")
+                        time.sleep(0.3)
 
-#     @Pyro5.server.oneway
-#     def cadastrarCompromisso(self, nome, compromisso, convidadosCompromisso):
-#         Servidor.compromissos.append((nome, compromisso))
-#         msg = 'Compromisso "' + compromisso['nome'] + '" confirmado'
-#         callback = Pyro5.api.Proxy(Servidor.clientes[nome])
-#         callback.receberMensagemConfirmacao(msg, self.assinar(msg))
-
-#         if(convidadosCompromisso is not None):
-#             convidados = convidadosCompromisso.split(",")
-#             nomeCompromisso = compromisso["nome"]
-
-#             for convidado in convidados:
-#                 if(Servidor.clientes.get(convidado) is not None):
-#                     callbackConvidado = Pyro5.api.Proxy(Servidor.clientes[convidado])   
-#                     msg = 'Deseja participar do compromisso: ' + nomeCompromisso + '?\n1 - Sim\n2 - Não\n'
-#                     option = callbackConvidado.receberMensagemCompromisso(msg, self.assinar(msg))
-                    
-#                     if option == 1:
-#                         novoCompromisso = compromisso.copy()
-#                         novoCompromisso['alertado'] = False
-#                         msg = "Deseja ser alertado: " + nomeCompromisso + "?\n1 - Sim\n2 - Não\n"
-#                         option = callbackConvidado.receberMensagemCompromisso(msg, self.assinar(msg))
-
-#                         if option == 1:
-#                             msg = "Em que horario deseja ser alertado? "
-#                             novoCompromisso['horarioAlerta'] = callbackConvidado.receberMensagemHorario(msg, self.assinar(msg))
-#                         elif option == 2:
-#                             novoCompromisso['horarioAlerta'] = None
-#                         Servidor.compromissos.append((callbackConvidado.getNome(), novoCompromisso))
-
-#     @Pyro5.server.oneway
-#     def cancelarCompromisso(self, nome):
-#         for i in reversed(range(len(Servidor.compromissos))):
-#             if nome == Servidor.compromissos[i][1]["nome"]:
-#                 Servidor.compromissos.pop(i)
-#         print(Servidor.compromissos)
-
-#     @Pyro5.server.oneway
-#     def consultarCompromisso(self, data, referenciaCliente):
-#         callbackCliente = Pyro5.api.Proxy(referenciaCliente)
-#         comp = []        
-
-#         for compromisso in Servidor.compromissos:
-#             if data == compromisso[1]["data"] and compromisso[0] == callbackCliente.getNome():
-#                 if not self.isInList(comp, compromisso[1]["nome"]):
-#                     comp.append(compromisso[1])
-
-#         callbackCliente.imprimirCompromissos(comp)   
-    
-#     def isInList(self, list, name):
-#         for element in list:
-#             if name == element['nome']:
-#                 return True
-#         return False
-
-#     def assinar(self, msg):
-#         bmsg = bytes(msg, 'utf-8')
-#         h = SHA256.new()
-#         h.update(bmsg)
-#         key = RSA.import_key(self.private_key)
-#         sig = pkcs1_15.new(key).sign(h)
-#         return sig
-
-
-# def verificarAlertas():
-#     while True:
-#         try:
-#             for compromisso in Servidor.compromissos:
-#                 if compromisso[1]["data"] == str(datetime.date.today()):
-#                     t = time.localtime()
-#                     horarioAtual = time.strftime("%H:%M", t)
-#                     if compromisso[1]["horarioAlerta"] == str(horarioAtual) and compromisso[1]["alertado"] == False:
-#                         nomeCompromisso = compromisso[1]["nome"]
-#                         callbackCliente = Pyro5.api.Proxy(Servidor.clientes[compromisso[0]])
-#                         callbackCliente.notificacao(f"ALERTA DE COMPROMISSO: {nomeCompromisso}")
-#                         compromisso[1]["alertado"] = True
-#                         time.sleep(0.3)
-#         except:
-#             pass
-
-#         time.sleep(0.3)
-
-# def main():
-#     daemon = Pyro5.server.Daemon()         # make a Pyro daemon
-#     ns = Pyro5.api.locate_ns()             # find the name server
-#     uri = daemon.register(Servidor)        # register the greeting maker as a Pyro object
-#     ns.register("Agenda", uri)             # register the object with a name in the name server
-
-#     print("Ready.")  
-#     thread = threading.Thread(target=verificarAlertas)
-#     thread.start()              
-#     daemon.requestLoop()   
+            time.sleep(0.3)
     
 if __name__ == "__main__":
-    # http_server = WSGIServer(("localhost", 5000), app)
-    # http_server.serve_forever()
+    thread = threading.Thread(target=verificarAlertas, daemon=True)
+    thread.start()
     app.run(debug=True)
